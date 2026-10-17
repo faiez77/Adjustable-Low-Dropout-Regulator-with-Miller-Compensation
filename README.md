@@ -103,12 +103,12 @@ where A is the amplifier gain and B is the feedback factor. The minimum gain nee
 All blocks are integrated to form the complete LDO. A 30 pF Miller capacitor is added to split the poles and improve the phase margin.
 
 <p align="center">
-  <img src="images/LDO_schematic.png" width="620" alt="Complete LDO schematic."><br>
+  <img src="images/LDO SCHEMATIC.png" width="620" alt="Complete LDO schematic."><br>
   <sub><b>Figure 6.</b> Complete LDO schematic.</sub>
 </p>
 
 <p align="center">
-  <img src="images/LDO_testbench.png" width="620" alt="LDO testbench."><br>
+  <img src="images/LDO TESTBench.png" width="620" alt="LDO testbench."><br>
   <sub><b>Figure 7.</b> LDO testbench.</sub>
 </p>
 
