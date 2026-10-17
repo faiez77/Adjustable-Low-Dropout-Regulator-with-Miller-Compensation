@@ -1,151 +1,217 @@
 # Adjustable-Low-Dropout-Regulator-with-Miller-Compensation
 
-A 1.0 V-input, **digitally adjustable low-dropout regulator** that delivers **0.6 V or 0.8 V at up to 20 mA**, selected by one control bit. The repo contains the schematic, a reusable error-amplifier sub-circuit, and a set of testbenches for loop stability, regulation, dropout, startup and transients.
+A 1.0 V-input, digitally adjustable low-dropout regulator that delivers 0.6 V or 0.8 V at up to 20 mA, selected by one control bit. The repo contains the schematic, a reusable error-amplifier sub-circuit, and a set of testbenches for loop stability, regulation, dropout, startup and transients.
 
-| | |
+---
+
+## Key Specifications
+
+| Parameter | Value |
 |---|---|
-| Input | 1.0 V |
-| Output | **0.6 V** (`CTRL`=0) / **0.8 V** (`CTRL`=1) |
-| Max load | 20 mA |
-| Output capacitor | 100 pF |
-| Reference | 0.6 V |
-| Compensation | 30 pF Miller capacitor (gate → output) |
-| Devices | Generic Level-1 MOSFET models (not a foundry PDK) |
+| Input supply (VDD) | 1.0 V (line-regulation sweep from 0.6 V / 0.7 V) |
+| Output voltage | 0.6 V (CTRL = 0) / 0.8 V (CTRL = 1) |
+| Maximum load current | 20 mA |
+| Load capacitance | 100 pF |
+| Reference voltage (VREF) | 0.6 V |
+| Error-amplifier bias current (IREF) | 0.1 µA |
+| Compensation | Miller capacitor, CC = 30 pF |
+| Feedback divider | RFB1 = 20 kΩ, RFB2 = 60 kΩ (10 µA divider current) |
+| Verified corners | TT 25 °C, SS −40 °C, FF 125 °C |
+
+
+## Abstract
+
+A low-dropout (LDO) regulator is a linear voltage regulator that provides a stable DC output from a higher input supply. To meet evolving on-chip power-delivery requirements, this design implements a CMOS LDO that supports two selectable output levels through a single binary control input (CTRL). From a 1.0 V battery input, it provides a default output of 0.6 V and an alternate output of 0.8 V at a maximum load of 20 mA.
+
+## Principle of Operation
+
+A linear regulator steps a supply voltage down to a lower level by dissipating the excess power as heat in a pass device. The gate voltage of the pass element is continuously adjusted by a feedback loop to hold the output constant.
+
+- **Error amplifier.** A high-gain operational amplifier compares a stable reference voltage with the feedback voltage taken from the resistor divider. The amplifier is biased by a current mirror driven by IREF.
+- **Gain.** A second-stage common-source amplifier increases the loop gain.
+- **Stability.** Miller compensation splits the poles, moving the dominant pole down so that the second pole lies beyond the unity-gain bandwidth, which improves the phase margin.
+- **Output stage.** An NMOS pull-down in the amplifier output stage enables rail-to-rail swing, which is valuable in low-voltage, single-supply systems where the output must approach the supply rails.
+
+<p align="center">
+  <img src="images/reftop.png" width="620" alt="Top-level schematic of the LDO."><br>
+  <sub><b>Figure 1.</b> Top-level schematic of the LDO.</sub>
+</p>
+
+## Reference Circuit
+
+<p align="center">
+  <img src="images/refckt.png" width="760" alt="Proposed reference schematic."><br>
+  <sub><b>Figure 2.</b> Proposed reference schematic.</sub>
+</p>
+
+
+## Design Methodology
+
+### 1. Sizing the Pass Element
+
+- The PMOS pass device must carry the full 20 mA load current across all PVT corners while remaining in saturation.
+- It is sized for the worst case: maximum load current, minimum VDD, minimum tolerable gate voltage, and the SS corner at −40 °C.
+- To avoid over-sizing, its leakage must stay below the maximum current permitted through the resistor divider. This is verified at the FF corner at 125 °C.
+- The device is designed to operate from −40 °C to 125 °C.
+- Final pass-device parameters: W = 3.48 µm, L = 1.5 µm, nf = 60, m = 196.
+
+<p align="center">
+  <img src="images/passele_SS_res.png" width="560" alt="Drain current of the pass element at the SS corner (−40 °C): 20 mA."><br>
+  <sub><b>Figure 3.</b> Drain current of the pass element at the SS corner (−40 °C): 20 mA.</sub>
+</p>
+
+<p align="center">
+  <img src="images/passele_FF_res.png" width="560" alt="Leakage current of the pass element at the FF corner (125 °C): 8.08 µA."><br>
+  <sub><b>Figure 4.</b> Leakage current of the pass element at the FF corner (125 °C): 8.08 µA.</sub>
+</p>
+
+### 2. Sizing the Feedback Network
+
+- The divider current is set to 10 µA and VREF to 0.6 V.
+- With **CTRL = 0 V**, the bottom NMOS (M10) is off, so no divider current flows and the feedback node equals the output. The output settles at **0.6 V**.
+- With **CTRL = 1 V**, M10 conducts and the divider is active:
+
+  VOUT = VREF × (1 + RFB1 / RFB2)
+
+- For VOUT = 0.8 V at 10 µA, RFB1 + RFB2 = 0.8 V / 10 µA = 80 kΩ, which gives **RFB1 = 20 kΩ** and **RFB2 = 60 kΩ**.
+
+### 3. Error Amplifier Design
+
+The closed-loop output follows
+
+  VOUT / VREF = A / (1 + A·B)
+
+where A is the amplifier gain and B is the feedback factor. The minimum gain needed to regulate is:
+
+| VREF | B | VOUT | Required A |
+|---|---|---|---|
+| 0.6 V | 1.00 | 0.589 V | 54.54 (34.7 dB) |
+| 0.6 V | 0.75 | 0.789 V | 95.64 (39.6 dB) |
+
+- The larger value, about 39.6 dB, is the minimum gain target across PVT corners.
+- A two-stage amplifier is used to improve both gain and bandwidth.
+- The second stage is a common-source amplifier.
+- The bias current is 0.1 µA.
+
+<p align="center">
+  <img src="images/ErrAmp_schematic.png" width="620" alt="Two-stage error amplifier schematic."><br>
+  <sub><b>Figure 5.</b> Two-stage error amplifier schematic.</sub>
+</p>
+
+## LDO Schematic and Testbench
+
+All blocks are integrated to form the complete LDO. A 30 pF Miller capacitor is added to split the poles and improve the phase margin.
+
+<p align="center">
+  <img src="images/LDO_schematic.png" width="620" alt="Complete LDO schematic."><br>
+  <sub><b>Figure 6.</b> Complete LDO schematic.</sub>
+</p>
+
+<p align="center">
+  <img src="images/LDO_testbench.png" width="620" alt="LDO testbench."><br>
+  <sub><b>Figure 7.</b> LDO testbench.</sub>
+</p>
+
+## Simulation Results
+
+### 1. AC Analysis (Loop Gain and Phase Margin)
+
+**Test condition:** VDD = 1 V, load = 20 mA, CLOAD = 100 pF, CTRL = 0
+
+<p align="center">
+  <img src="images/L20TT25.png" width="560" alt="Loop gain at the TT corner, 25 °C (20 mA load)."><br>
+  <sub><b>Figure 8.</b> Loop gain at the TT corner, 25 °C (20 mA load).</sub>
+</p>
+
+<p align="center">
+  <img src="images/L20SS40.png" width="560" alt="Loop gain at the SS corner, −40 °C (20 mA load)."><br>
+  <sub><b>Figure 9.</b> Loop gain at the SS corner, −40 °C (20 mA load).</sub>
+</p>
+
+<p align="center">
+  <img src="images/L20FF125.png" width="560" alt="Loop gain at the FF corner, 125 °C (20 mA load)."><br>
+  <sub><b>Figure 10.</b> Loop gain at the FF corner, 125 °C (20 mA load).</sub>
+</p>
+
+**Test condition:** VDD = 1 V, load = 20 µA, CLOAD = 100 pF, CTRL = 0
+
+<p align="center">
+  <img src="images/L00TT25.png" width="560" alt="Loop gain at the TT corner, 25 °C (20 µA load)."><br>
+  <sub><b>Figure 11.</b> Loop gain at the TT corner, 25 °C (20 µA load).</sub>
+</p>
+
+<p align="center">
+  <img src="images/L00SS40.png" width="560" alt="Loop gain at the SS corner, −40 °C (20 µA load)."><br>
+  <sub><b>Figure 12.</b> Loop gain at the SS corner, −40 °C (20 µA load).</sub>
+</p>
+
+<p align="center">
+  <img src="images/L00FF125.png" width="560" alt="Loop gain at the FF corner, 125 °C (20 µA load)."><br>
+  <sub><b>Figure 13.</b> Loop gain at the FF corner, 125 °C (20 µA load).</sub>
+</p>
+
+### 2. Transient and DC Analysis
+
+#### Start-up and output selection
+**Test condition:** VDD ramps 0 V to 1 V, load = 20 mA, CLOAD = 100 pF, CTRL switches 0 V to 1 V
+
+<p align="center">
+  <img src="images/startup.png" width="620" alt="Start-up and adjustable output voltage (0.6 V / 0.8 V)."><br>
+  <sub><b>Figure 14.</b> Start-up and adjustable output voltage (0.6 V / 0.8 V).</sub>
+</p>
+
+#### Line regulation
+**Test condition:** VDD = 0.6 V to 1 V, load = 20 mA, CLOAD = 100 pF
+
+<p align="center">
+  <img src="images/line_reg.png" width="560" alt="Line regulation."><br>
+  <sub><b>Figure 15.</b> Line regulation.</sub>
+</p>
+
+#### Load regulation
+**Test condition:** VDD = 1 V, load = 1 mA to 20 mA, CLOAD = 100 pF
+
+<p align="center">
+  <img src="images/load_reg.png" width="560" alt="Load regulation."><br>
+  <sub><b>Figure 16.</b> Load regulation.</sub>
+</p>
+
+#### Output voltage versus supply
+**Test condition:** VDD = 0.7 V to 1 V, load = 2 mA, 10 mA and 20 mA, CLOAD = 100 pF
+
+<p align="center">
+  <img src="images/vdd_vs_vout.png" width="560" alt="VOUT versus VDD for different load currents."><br>
+  <sub><b>Figure 17.</b> VOUT versus VDD for different load currents.</sub>
+</p>
+
+#### Line transient
+**Test condition:** VDD = 0.7 V to 1 V to 0.7 V, load = 20 mA, CLOAD = 100 pF
+
+<p align="center">
+  <img src="images/line_transient.png" width="620" alt="Line-transient response."><br>
+  <sub><b>Figure 18.</b> Line-transient response.</sub>
+</p>
+
+#### Load transient
+**Test condition:** VDD = 1 V, load = 10 mA to 20 mA, CLOAD = 100 pF
+
+<p align="center">
+  <img src="images/load_transient.png" width="620" alt="Load-transient response."><br>
+  <sub><b>Figure 19.</b> Load-transient response.</sub>
+</p>
 
 ---
 
-## 1. Architecture
+## Author
 
-```
-
-```
-
-| Block | Role |
-|---|---|
-| **EA** (error amp) | NMOS differential pair with PMOS mirror load; 1 µA reference mirrored ×10 → 10 µA tail |
-| **M1** | PMOS pass device, W/L = 800 µm / 0.1 µm, carries all load current |
-| **C2** | 30 pF Miller capacitor from M1 gate to OUT (pole splitting) |
-| **R3 / R4** | Feedback divider, 20 kΩ (top) / 60 kΩ (bottom) |
-| **M2S** | NMOS switch in series with R4; `CTRL` opens or closes the bottom leg |
-
-**Loop action:** if OUT drops, `fb` drops, the EA output (M1 gate) falls, M1 conducts more, and OUT recovers.
+**Anurag Singh** 
+**Saiyed Faiez Husnain**
 
 ---
 
-## 2. Design equations and worked examples
+## References
 
-### 2.1 Output selection
+1. A. V. Nimkar, S. V. Pattalwar and P. R. Lawhale, "Design of a Programmable Low Drop-Out Regulator using CMOS Technology," *International Journal of Innovative Research in Computer and Communication Engineering*, vol. 3, no. 2, Feb. 2015.
+2. I. Vaisband, B. Price, S. Köse, Y. Kolla, J. Fischer and E. G. Friedman, "Distributed LDO regulators in a 28 nm power delivery system," *Analog Integrated Circuits and Signal Processing*, vol. 83, pp. 295–309, Jun. 2015.
 
-`Vout = Vref · (1 + R3/R4)`
 
-- `CTRL=1` (M2S on): feedback factor B = R4/(R3+R4) = 60/80 = 0.75  
-  → Vout = 0.6 × (1 + 20/60) = **0.8 V**
-- `CTRL=0` (M2S off): R4 leg is open, no divider current, B = 1 (unity-gain buffer)  
-  → Vout = **0.6 V**
-- Divider current in 0.8 V mode: 0.8 V / 80 kΩ = **10 µA**
-
-### 2.2 Power and efficiency
-
-An LDO dissipates `(VDD − Vout) · Iload`, so efficiency ≈ Vout/VDD.
-
-| Mode | Loss at 20 mA | Efficiency |
-|---|---|---|
-| 0.6 V | 0.4 V × 20 mA = 8 mW | ≈ 60 % |
-| 0.8 V | 0.2 V × 20 mA = 4 mW | ≈ 80 % |
-
-### 2.3 Gain needed for accuracy
-
-Closed loop: `Vout/Vref = A / (1 + A·B)`. Allowing about 11 mV of error:
-
-- B = 1, Vout ≥ 0.589 V → ratio 0.9817 → A = 0.9817/(1 − 0.9817) ≈ **54 (34.7 dB)**
-- B = 0.75, Vout ≥ 0.789 V → ratio 1.315 → A = 1.315/(1 − 0.75 × 1.315) ≈ **96 (39.6 dB)**
-
-The 0.8 V mode is the tighter requirement, so the loop needs ≳ 40 dB at all load and corner conditions.
-
-### 2.4 Stability (Miller compensation)
-
-With C2 across the pass device:
-
-- Loop unity-gain frequency: `UGF ≈ gm1 · B / (2π · Cc)`
-- Non-dominant pole: `p2 ≈ gm_pass / (2π · CL)`
-
-**Example (0.6 V mode):** gm1 ≈ 346 µS, Cc = 30 pF, B = 1  
-→ UGF ≈ 346 µ / (2π × 30 p) ≈ **1.8 MHz**, which matches the simulated 1.8 MHz.
-
-The load pole `1/(2π · Rout · CL)` moves about 1000× between 20 µA and 20 mA, which is why stability is checked at both load extremes in every corner.
-
----
-
-## 3. Repository layout
-
-```
-LDO_TOP.asc             Top-level schematic (open this first)
-EA.asy                  Error-amp block symbol
-pmos_g.asy, nmos_g.asy  MOSFET symbols used by the schematic
-ldo_ea.lib              Generic MOSFET models + EA sub-circuit (used by LDO_TOP.asc)
-ldo_core.lib            Flat LDO sub-circuit LDO_ADJ + models (used by the testbenches)
-tb_loop_gain.cir        AC loop gain / phase margin (L-C loop-break)
-tb_startup_adjust.cir   Power-up, then CTRL 0→1 (0.6 V → 0.8 V)
-tb_dc_sweeps.cir        Vout vs VDD: line regulation and dropout, both modes
-tb_load_reg.cir         DC load regulation, 1 → 20 mA
-tb_line_transient.cir   VDD step response
-tb_load_transient.cir   10 mA ↔ 20 mA load step
-README.md
-```
-
-Keep all files in one folder: the schematic and testbenches find the symbols and `.lib` files by relative path.
-
----
-
-## 4. Running it
-
-1. **Schematic:** open `LDO_TOP.asc` in LTspice and run. It simulates power-up, then switches `CTRL` from 0 to 1 at 200 µs. Probe `OUT`.
-2. **Testbenches:** open any `tb_*.cir` and run.
-3. **Corners:** set `.param corner` (−1 = FF, 0 = TT, +1 = SS). It shifts Vth by ±50 mV and scales Kp by ∓20 %. Several testbenches already `.step` over it.
-4. **Output mode:** change `ctl` (0 or 1) in the testbench, or the `Vctrl` source in the schematic.
-5. **Loop gain:** plot `-V(fbtap)/V(vfb)` in dB and degrees. **Phase margin = 180° + phase at the 0 dB crossing.**
-
-Sub-circuit pins for `LDO_ADJ`: `vdd vref ctrl vout fbtap vfb`. Short `fbtap` to `vfb` for normal operation; break them apart for loop gain.
-
----
-
-## 5. Results (typical and corner sweep)
-
-Generic models, VDD = 1.0 V, CL = 100 pF.
-
-| Metric | 0.6 V mode | 0.8 V mode |
-|---|---|---|
-| Output at 20 mA (TT) | 0.5997 V | 0.7995 V |
-| Load regulation, 1 → 20 mA | −0.46 mV | −0.63 mV |
-| Line regulation, 0.9 → 1.15 V at 20 mA | ≈ 0.06 mV/V | ≈ 0.9 mV/V |
-| Dropout at 20 mA (Vout = 98 % of target) | ≈ 195 mV | ≈ 80 mV |
-| Loop-gain UGF (TT / SS / FF, both loads) | 1.6 – 2.0 MHz | 0.9 – 1.5 MHz |
-| **Phase margin, all corners, 20 µA and 20 mA** | **74° – 89°** | **80° – 89°** |
-| Load step 10 → 20 mA in 100 ns | ≈ −43 mV undershoot, ≈ +44 mV on release | — |
-| VDD step 0.9 ↔ 1.0 V | ≈ ±9 mV | — |
-| Startup | no overshoot | no overshoot |
-
----
-
-## 6. Verification status and limitations
-
-- **Verified in ngspice 42**, not in LTspice itself. The netlists were simulated there with LTspice-only directives (`.step`, `.meas`, the `.tran 0 …` form) stripped or converted. The schematic's connectivity was checked by rebuilding its netlist from `LDO_TOP.asc` and simulating that. If LTspice reports a `.meas` or `.step` error, the simulation still runs; use the waveform viewer instead.
-- **Generic Level-1 models** (Vth ≈ 0.35 V, Kp 300 µA/V² N and 100 µA/V² P, λ = 0.1). Absolute gain, leakage and dropout will differ on a real process node.
-- **Corners are emulated** by shifting Vth and Kp. **Temperature is not modeled.**
-- Not yet covered: PSRR, output noise, quiescent current versus load, Monte Carlo, and layout / post-layout.
-
-## 7. Roadmap
-
-- [ ] PSRR and output-noise testbenches
-- [ ] Quiescent current versus load
-- [ ] Temperature-aware models and Monte Carlo mismatch
-- [ ] Port the design to a real PDK (e.g. 28 nm) and compare
-- [ ] Cap-less / small-C_L variant
-
-## Credits
-
-Specifications and topology follow the adjustable-LDO reference design from the IIT Hyderabad × VSD × Synopsys *Cloud-Based Analog IC Design Hackathon* (Abhijeet Patnaik). LTspice implementation and documentation: `<your name>`.
-
-## License
-
-`<choose a license, e.g. MIT>`
