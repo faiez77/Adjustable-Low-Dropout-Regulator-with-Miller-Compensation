@@ -94,7 +94,7 @@ where A is the amplifier gain and B is the feedback factor. The minimum gain nee
 - The bias current is 0.1 µA.
 
 <p align="center">
-  <img src="images/ErrAmp_schematic.png" width="620" alt="Two-stage error amplifier schematic."><br>
+  <img src="images/ErrAMp_loopgain_tb.png" width="620" alt="Two-stage error amplifier schematic."><br>
   <sub><b>Figure 5.</b> Two-stage error amplifier schematic.</sub>
 </p>
 
