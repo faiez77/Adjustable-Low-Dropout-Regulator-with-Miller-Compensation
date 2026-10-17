@@ -156,7 +156,7 @@ All blocks are integrated to form the complete LDO. A 30 pF Miller capacitor is 
 **Test condition:** VDD ramps 0 V to 1 V, load = 20 mA, CLOAD = 100 pF, CTRL switches 0 V to 1 V
 
 <p align="center">
-  <img src="images/startup.png" width="620" alt="Start-up and adjustable output voltage (0.6 V / 0.8 V)."><br>
+  <img src="images/STARTUP.png" width="620" alt="Start-up and adjustable output voltage (0.6 V / 0.8 V)."><br>
   <sub><b>Figure 14.</b> Start-up and adjustable output voltage (0.6 V / 0.8 V).</sub>
 </p>
 
@@ -164,7 +164,7 @@ All blocks are integrated to form the complete LDO. A 30 pF Miller capacitor is 
 **Test condition:** VDD = 0.6 V to 1 V, load = 20 mA, CLOAD = 100 pF
 
 <p align="center">
-  <img src="images/line_reg.png" width="560" alt="Line regulation."><br>
+  <img src="images/Line_REG.png" width="560" alt="Line regulation."><br>
   <sub><b>Figure 15.</b> Line regulation.</sub>
 </p>
 
@@ -172,7 +172,7 @@ All blocks are integrated to form the complete LDO. A 30 pF Miller capacitor is 
 **Test condition:** VDD = 1 V, load = 1 mA to 20 mA, CLOAD = 100 pF
 
 <p align="center">
-  <img src="images/load_reg.png" width="560" alt="Load regulation."><br>
+  <img src="images/LOAD_REG.png" width="560" alt="Load regulation."><br>
   <sub><b>Figure 16.</b> Load regulation.</sub>
 </p>
 
@@ -180,7 +180,7 @@ All blocks are integrated to form the complete LDO. A 30 pF Miller capacitor is 
 **Test condition:** VDD = 0.7 V to 1 V, load = 2 mA, 10 mA and 20 mA, CLOAD = 100 pF
 
 <p align="center">
-  <img src="images/vdd_vs_vout.png" width="560" alt="VOUT versus VDD for different load currents."><br>
+  <img src="images/VDDvsVout.png" width="560" alt="VOUT versus VDD for different load currents."><br>
   <sub><b>Figure 17.</b> VOUT versus VDD for different load currents.</sub>
 </p>
 
@@ -188,7 +188,7 @@ All blocks are integrated to form the complete LDO. A 30 pF Miller capacitor is 
 **Test condition:** VDD = 0.7 V to 1 V to 0.7 V, load = 20 mA, CLOAD = 100 pF
 
 <p align="center">
-  <img src="images/line_transient.png" width="620" alt="Line-transient response."><br>
+  <img src="images/Line Transient.png" width="620" alt="Line-transient response."><br>
   <sub><b>Figure 18.</b> Line-transient response.</sub>
 </p>
 
@@ -196,7 +196,7 @@ All blocks are integrated to form the complete LDO. A 30 pF Miller capacitor is 
 **Test condition:** VDD = 1 V, load = 10 mA to 20 mA, CLOAD = 100 pF
 
 <p align="center">
-  <img src="images/load_transient.png" width="620" alt="Load-transient response."><br>
+  <img src="images/LoadTRANS.png" width="620" alt="Load-transient response."><br>
   <sub><b>Figure 19.</b> Load-transient response.</sub>
 </p>
 
