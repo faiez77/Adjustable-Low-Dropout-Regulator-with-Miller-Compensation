@@ -204,7 +204,7 @@ All blocks are integrated to form the complete LDO. A 30 pF Miller capacitor is 
 
 ## Author
 
-**Anurag Singh ,** 
+**Anurag Singh |** 
 **Saiyed Faiez Husnain**
 
 ---
